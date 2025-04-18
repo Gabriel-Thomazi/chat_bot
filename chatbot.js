@@ -1,28 +1,19 @@
-const express = require('express');
-const qrcode = require('qrcode');
+// Importando as bibliotecas necessárias
+const qrcode = require("qrcode-terminal");
 const { Client, LocalAuth } = require("whatsapp-web.js");
-const puppeteer = require('puppeteer');
-const path = require('path');
-
-const app = express();
+const puppeteer = require('puppeteer'); // Importando o Puppeteer para passar as opções necessárias
 
 // Configuração do cliente WhatsApp com Puppeteer
 const client = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
-    args: ['--no-sandbox', '--disable-setuid-sandbox']  // Argumentos necessários para o Railway
+    args: ['--no-sandbox', '--disable-setuid-sandbox']  // Adicionando os argumentos necessários para evitar o erro no Railway
   }
 });
 
-// Servir o QR Code via HTTP
-client.on("qr", async (qr) => {
-  try {
-    // Gera o QR Code em formato de imagem
-    await qrcode.toFile('./public/qrcode.png', qr);
-    console.log("QR Code gerado e salvo como imagem!");
-  } catch (err) {
-    console.error("Erro ao gerar o QR Code:", err);
-  }
+// Serviço de leitura do QR code
+client.on("qr", (qr) => {
+  qrcode.generate(qr, { small: true });
 });
 
 // Após isso ele diz que foi tudo certo
@@ -58,11 +49,4 @@ client.on("message", async (msg) => {
         ", que bom que você tem interesse em se hospedar no Recanto das Flores! 🌿✨ Para qual data você gostaria de verificar a disponibilidade? Nossas acomodações incluem café da manhã e uma experiência incrível. Me avise a data e quantas pessoas serão para que eu possa te passar as opções! 😊"
     ); // Primeira mensagem de texto
   }
-});
-
-// Servindo o QR Code via Express (em uma rota HTTP)
-app.use(express.static('public')); // Serve os arquivos estáticos da pasta 'public'
-
-app.listen(3000, () => {
-  console.log('Servidor rodando na porta 3000');
 });
