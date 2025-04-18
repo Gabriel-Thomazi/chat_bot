@@ -1,19 +1,28 @@
-// Importando as bibliotecas necessárias
-const qrcode = require("qrcode-terminal");
+const express = require("express");
+const qrcode = require("qrcode");
 const { Client, LocalAuth } = require("whatsapp-web.js");
-const puppeteer = require('puppeteer'); // Importando o Puppeteer para passar as opções necessárias
+const path = require("path");
+
+// Iniciar o servidor Express
+const app = express();
 
 // Configuração do cliente WhatsApp com Puppeteer
 const client = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
-    args: ['--no-sandbox', '--disable-setuid-sandbox']  // Adicionando os argumentos necessários para evitar o erro no Railway
-  }
+    args: ["--no-sandbox", "--disable-setuid-sandbox"], // Argumentos necessários para o Railway
+  },
 });
 
-// Serviço de leitura do QR code
-client.on("qr", (qr) => {
-  qrcode.generate(qr, { small: true });
+// Gerar o QR Code e salvar como imagem
+client.on("qr", async (qr) => {
+  try {
+    // Gera e salva o QR Code como imagem no diretório public
+    await qrcode.toFile("./public/qrcode.png", qr);
+    console.log("QR Code gerado e salvo!");
+  } catch (err) {
+    console.error("Erro ao gerar QR Code:", err);
+  }
 });
 
 // Após isso ele diz que foi tudo certo
@@ -21,32 +30,36 @@ client.on("ready", () => {
   console.log("Tudo certo! WhatsApp conectado.");
 });
 
-// Inicializa o cliente
+// Inicializa o cliente WhatsApp
 client.initialize();
 
-const delay = (ms) => new Promise((res) => setTimeout(res, ms)); // Função para criar delay
+const delay = (ms) => new Promise((res) => setTimeout(res, ms)); // Função para delay
 
 // Funil para interação com o usuário
 client.on("message", async (msg) => {
-  if (
-    msg.body.match(/(Menu|menu|dia|tarde|noite|oi|Oi|Ola|Olá|ola|Oie|oie)/i) &&
-    msg.from.endsWith("@c.us")
-  ) {
+  if (msg.body.match(/(Menu|menu|oi|Olá)/i) && msg.from.endsWith("@c.us")) {
     const chat = await msg.getChat();
 
-    await delay(3000); // Delay de 3 segundos
+    await delay(3000);
 
     await chat.sendStateTyping(); // Simulando digitação
-    await delay(3000); // Delay de 3 segundos
+    await delay(3000);
 
-    const contact = await msg.getContact(); // Pegando o contato
-    const name = contact.pushname; // Pegando o nome do contato
+    const contact = await msg.getContact();
+    const name = contact.pushname;
 
     await client.sendMessage(
       msg.from,
-      "Olá! " +
-        name.split(" ")[0] +
-        ", que bom que você tem interesse em se hospedar no Recanto das Flores! 🌿✨ Para qual data você gostaria de verificar a disponibilidade? Nossas acomodações incluem café da manhã e uma experiência incrível. Me avise a data e quantas pessoas serão para que eu possa te passar as opções! 😊"
-    ); // Primeira mensagem de texto
+      `Olá, ${
+        name.split(" ")[0]
+      }! Para conectar ao WhatsApp, por favor, escaneie o QR Code em: http://<SEU_DOMÍNIO>/qrcode.png`
+    );
   }
+});
+
+// Servir o QR Code como um arquivo estático
+app.use(express.static("public")); // Serve arquivos da pasta 'public'
+
+app.listen(3000, () => {
+  console.log("Servidor rodando na porta 3000");
 });
