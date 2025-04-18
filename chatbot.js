@@ -1,19 +1,24 @@
-// Importando as bibliotecas necessárias
-const qrcode = require("qrcode-terminal");
+const qrcode = require("qrcode");
 const { Client, LocalAuth } = require("whatsapp-web.js");
-const puppeteer = require('puppeteer'); // Importando o Puppeteer para passar as opções necessárias
+const puppeteer = require('puppeteer'); // Importando o Puppeteer
 
 // Configuração do cliente WhatsApp com Puppeteer
 const client = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
-    args: ['--no-sandbox', '--disable-setuid-sandbox']  // Adicionando os argumentos necessários para evitar o erro no Railway
+    args: ['--no-sandbox', '--disable-setuid-sandbox']  // Argumentos necessários para o Railway
   }
 });
 
 // Serviço de leitura do QR code
-client.on("qr", (qr) => {
-  qrcode.generate(qr, { small: true });
+client.on("qr", async (qr) => {
+  try {
+    // Gera e salva o QR Code como imagem PNG no diretório 'public'
+    await qrcode.toFile('./public/qrcode.png', qr);
+    console.log("QR Code gerado e salvo como imagem!");
+  } catch (err) {
+    console.error("Erro ao gerar o QR Code:", err);
+  }
 });
 
 // Após isso ele diz que foi tudo certo
