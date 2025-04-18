@@ -1,22 +1,32 @@
-// leitor de qr code
+// Importando as bibliotecas necessárias
 const qrcode = require("qrcode-terminal");
-const { Client, Buttons, List, MessageMedia } = require("whatsapp-web.js"); // Mudança Buttons
-const client = new Client();
-// serviço de leitura do qr code
+const { Client, LocalAuth } = require("whatsapp-web.js");
+const puppeteer = require('puppeteer'); // Importando o Puppeteer para passar as opções necessárias
+
+// Configuração do cliente WhatsApp com Puppeteer
+const client = new Client({
+  authStrategy: new LocalAuth(),
+  puppeteer: {
+    args: ['--no-sandbox', '--disable-setuid-sandbox']  // Adicionando os argumentos necessários para evitar o erro no Railway
+  }
+});
+
+// Serviço de leitura do QR code
 client.on("qr", (qr) => {
   qrcode.generate(qr, { small: true });
 });
-// apos isso ele diz que foi tudo certo
+
+// Após isso ele diz que foi tudo certo
 client.on("ready", () => {
   console.log("Tudo certo! WhatsApp conectado.");
 });
-// E inicializa tudo
+
+// Inicializa o cliente
 client.initialize();
 
-const delay = (ms) => new Promise((res) => setTimeout(res, ms)); // Função que usamos para criar o delay entre uma ação e outra
+const delay = (ms) => new Promise((res) => setTimeout(res, ms)); // Função para criar delay
 
-// Funil
-
+// Funil para interação com o usuário
 client.on("message", async (msg) => {
   if (
     msg.body.match(/(Menu|menu|dia|tarde|noite|oi|Oi|Ola|Olá|ola|Oie|oie)/i) &&
@@ -24,17 +34,19 @@ client.on("message", async (msg) => {
   ) {
     const chat = await msg.getChat();
 
-    await delay(3000); //delay de 3 segundos
+    await delay(3000); // Delay de 3 segundos
 
-    await chat.sendStateTyping(); // Simulando Digitação
-    await delay(3000); //Delay de 3000 milisegundos mais conhecido como 3 segundos
-    const contact = await msg.getContact(); //Pegando o contato
-    const name = contact.pushname; //Pegando o nome do contato
+    await chat.sendStateTyping(); // Simulando digitação
+    await delay(3000); // Delay de 3 segundos
+
+    const contact = await msg.getContact(); // Pegando o contato
+    const name = contact.pushname; // Pegando o nome do contato
+
     await client.sendMessage(
       msg.from,
       "Olá! " +
         name.split(" ")[0] +
         ", que bom que você tem interesse em se hospedar no Recanto das Flores! 🌿✨ Para qual data você gostaria de verificar a disponibilidade? Nossas acomodações incluem café da manhã e uma experiência incrível. Me avise a data e quantas pessoas serão para que eu possa te passar as opções! 😊"
-    ); //Primeira mensagem de texto
+    ); // Primeira mensagem de texto
   }
 });
